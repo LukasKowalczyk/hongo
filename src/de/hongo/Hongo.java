@@ -108,11 +108,10 @@ public class Hongo {
 		String firstLetter = new String(key.charAt(0) + "").toUpperCase();
 		Method m = o.getClass().getMethod(
 				"get" + firstLetter + key.substring(1));
-		System.out.println();
 		return m.invoke(o);
 	}
 
-	public static String getUpdateKey(Class<?> c)
+	private static String getUpdateKey(Class<?> c)
 			throws IllegalArgumentException, IllegalAccessException {
 
 		for (Field f : c.getDeclaredFields()) {
