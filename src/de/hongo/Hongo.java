@@ -19,11 +19,12 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 
 import de.hongo.annotation.MongoCollectionInformation;
 import de.hongo.annotation.MongoDatabaseInformation;
 import de.hongo.annotation.MongoUpdateKey;
-import de.hongo.enums.LogicalMongoDBWord;
+import de.hongo.enums.MongoDBConstants;
 import de.hongo.exception.LogicalMongoDBWordException;
 import de.hongo.exception.MongelpCollectionConnectionException;
 import de.hongo.exception.MongelpDatabaseConnectionException;
@@ -32,15 +33,17 @@ public class Hongo {
 
 	private static Map<String, MongoDatabase> collectionMap = new HashMap<String, MongoDatabase>();
 
+	public static void dropCollections(Class<?> c)
+			throws MongelpDatabaseConnectionException {
+		getCollectionFromDatabase(c).drop();
+	}
+
 	public static void generateDatabaseConnection(Class<?> c)
 			throws MongelpDatabaseConnectionException {
 		if (c.isAnnotationPresent(MongoDatabaseInformation.class)) {
 			MongoDatabaseInformation mdbInfo = c
 					.getAnnotation(MongoDatabaseInformation.class);
-			String uri = MongoDatabaseInformation.URISTART + mdbInfo.username()
-					+ ":" + mdbInfo.password() + "@" + mdbInfo.host() + ":"
-					+ mdbInfo.port() + "/" + mdbInfo.databaseName();
-			MongoDatabase mongoDB = getMongoClient(uri).getDatabase(
+			MongoDatabase mongoDB = getMongoClient(mdbInfo).getDatabase(
 					mdbInfo.databaseName());
 			if (mongoDB == null) {
 				throw new MongelpDatabaseConnectionException(
@@ -53,7 +56,10 @@ public class Hongo {
 		}
 	}
 
-	private static MongoClient getMongoClient(String uri) {
+	private static MongoClient getMongoClient(MongoDatabaseInformation mdbInfo) {
+		String uri = MongoDatabaseInformation.URISTART + mdbInfo.username()
+				+ ":" + mdbInfo.password() + "@" + mdbInfo.host() + ":"
+				+ mdbInfo.port() + "/" + mdbInfo.databaseName();
 		return new MongoClient(new MongoClientURI(uri));
 	}
 
@@ -86,11 +92,11 @@ public class Hongo {
 	public static void updateInCollection(Object o)
 			throws MongelpDatabaseConnectionException,
 			MongelpCollectionConnectionException {
-		BasicDBObject filter = new BasicDBObject();
+		String key = "";
+		Object value = null;
 		try {
-			String key = getUpdateKey(o.getClass());
-			Object value = getMethodeValue(o, key);
-			filter = new BasicDBObject(key, value);
+			key = getUpdateKey(o.getClass());
+			value = getMethodeValue(o, key);
 		} catch (Exception e) {
 			throw new MongelpCollectionConnectionException(e);
 		}
@@ -99,7 +105,10 @@ public class Hongo {
 			throw new MongelpCollectionConnectionException(
 					"No such Collection found!");
 		}
-		 coll.updateOne(filter, (Document.parse(new Gson().toJson(o))));
+		coll.updateOne(
+				Filters.eq(key, value),
+				new Document(MongoDBConstants.SET.getParameterName(), (Document
+						.parse(new Gson().toJson(o)))));
 	}
 
 	private static Object getMethodeValue(Object o, String key)
@@ -176,7 +185,7 @@ public class Hongo {
 	}
 
 	public static BasicDBObject quereyBuilder(String parameterName,
-			List<Object> values, LogicalMongoDBWord word)
+			List<Object> values, MongoDBConstants word)
 			throws LogicalMongoDBWordException {
 		switch (word) {
 		case IN:
@@ -191,13 +200,14 @@ public class Hongo {
 	private static BasicDBObject generateINQuery(String parameterName,
 			List<Object> values) {
 		BasicDBObject basicDBObject = new BasicDBObject();
-		basicDBObject.put(parameterName, new BasicDBObject(
-				LogicalMongoDBWord.IN.getParameterName(), values));
+		basicDBObject.put(parameterName,
+				new BasicDBObject(MongoDBConstants.IN.getParameterName(),
+						values));
 		return basicDBObject;
 	}
 
 	public static BasicDBObject quereyBuilder(Map<String, Object> keyValue,
-			LogicalMongoDBWord word) throws LogicalMongoDBWordException {
+			MongoDBConstants word) throws LogicalMongoDBWordException {
 		switch (word) {
 		case AND:
 			return generateANDQuery(keyValue);
@@ -218,7 +228,7 @@ public class Hongo {
 	}
 
 	private static BasicDBObject generateMapQuery(Map<String, Object> keyValue,
-			LogicalMongoDBWord word) {
+			MongoDBConstants word) {
 		BasicDBObject basicDBObject = new BasicDBObject();
 		for (Entry<String, Object> entry : keyValue.entrySet()) {
 			basicDBObject
@@ -243,7 +253,7 @@ public class Hongo {
 		for (Entry<String, Object> entry : keyValue.entrySet()) {
 			list.add(new BasicDBObject(entry.getKey(), entry.getValue()));
 		}
-		basicDBObject.put(LogicalMongoDBWord.AND.getParameterName(), list);
+		basicDBObject.put(MongoDBConstants.AND.getParameterName(), list);
 		return basicDBObject;
 	}
 }
