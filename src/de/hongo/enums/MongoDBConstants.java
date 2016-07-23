@@ -1,7 +1,8 @@
 package de.hongo.enums;
 
 public enum MongoDBConstants {
-	AND("$and"), IN("$in"), NEQ("$ne"), EQ(""), GT("$gt"), LT("$lt"),REGEX("$regex"),SET("$set");
+	AND("$and"), IN("$in"), NEQ("$ne"), EQ(""), GT("$gt"), LT("$lt"), REGEX(
+			"$regex"), SET("$set");
 
 	private String parameter;
 
