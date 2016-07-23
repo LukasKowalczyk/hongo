@@ -227,6 +227,25 @@ public class Hongo {
 		}
 	}
 
+	public static BasicDBObject quereyBuilder(String key, Object value,
+			MongoDBConstants word) throws LogicalMongoDBWordException {
+		switch (word) {
+		case EQ:
+			return generateEQQuery(key, value);
+		case NEQ:
+			return generateQuery(key, value, word);
+		case LT:
+			return generateQuery(key, value, word);
+		case GT:
+			return generateQuery(key, value, word);
+		case REGEX:
+			return generateQuery(key, value, word);
+		default:
+			throw new LogicalMongoDBWordException(
+					"Logical word is not maintain in this method! Please use another one!");
+		}
+	}
+
 	private static BasicDBObject generateMapQuery(Map<String, Object> keyValue,
 			MongoDBConstants word) {
 		BasicDBObject basicDBObject = new BasicDBObject();
@@ -239,11 +258,25 @@ public class Hongo {
 		return basicDBObject;
 	}
 
+	private static BasicDBObject generateQuery(String key, Object value,
+			MongoDBConstants word) {
+		BasicDBObject basicDBObject = new BasicDBObject();
+		basicDBObject.put(key,
+				new BasicDBObject(word.getParameterName(), value));
+		return basicDBObject;
+	}
+
 	private static BasicDBObject generateEQQuery(Map<String, Object> keyValue) {
 		BasicDBObject basicDBObject = new BasicDBObject();
 		for (Entry<String, Object> entry : keyValue.entrySet()) {
 			basicDBObject.put(entry.getKey(), entry.getValue());
 		}
+		return basicDBObject;
+	}
+
+	private static BasicDBObject generateEQQuery(String key, Object value) {
+		BasicDBObject basicDBObject = new BasicDBObject();
+		basicDBObject.put(key, value);
 		return basicDBObject;
 	}
 
